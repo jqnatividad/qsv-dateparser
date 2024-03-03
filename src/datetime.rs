@@ -59,8 +59,8 @@ where
     /// more examples from [`Parse`], [`crate::parse()`] and [`crate::parse_with_timezone()`].
     #[inline]
     pub fn parse(&self, input: &str) -> Result<DateTime<Utc>> {
-        self.unix_timestamp(input)
-            .or_else(|| self.rfc2822(input))
+        self.rfc2822(input)
+            .or_else(|| self.unix_timestamp(input))
             .or_else(|| self.slash_mdy_family(input))
             .or_else(|| self.slash_ymd_family(input))
             .or_else(|| self.ymd_family(input))
