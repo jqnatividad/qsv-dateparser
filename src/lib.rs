@@ -258,6 +258,21 @@ pub fn parse_with_timezone<Tz2: TimeZone>(input: &str, tz: &Tz2) -> Result<DateT
     Parse::new(tz, Utc::now().time()).parse(input)
 }
 
+/// Similar to [`parse()`], this function takes a datetime string and a boolean `dmy_preference`
+/// and a timezone. When timezone is not given in the input string, this function will
+/// assume and parse the datetime by the custom timezone provided in this function's arguments.
+/// When `dmy_preference` is `true`, it will parse strings using the DMY format. Otherwise, it
+/// parses them using an MDY format.
+#[inline]
+pub fn parse_with_preference_and_timezone<Tz2: TimeZone>(
+    input: &str,
+    dmy_preference: bool,
+    tz: &Tz2,
+) -> Result<DateTime<Utc>> {
+    let midnight = MIDNIGHT.get_or_init(|| NaiveTime::from_hms_opt(0, 0, 0).unwrap());
+    Parse::new_with_preference(tz, *midnight, dmy_preference).parse(input)
+}
+
 /// Similar to [`parse()`] and [`parse_with_timezone()`], this function takes a datetime string, a
 /// custom [`chrono::TimeZone`] and a default naive time. In addition to assuming timezone when
 /// it's not given in datetime string, this function also use provided default naive time in parsed
@@ -592,6 +607,153 @@ mod tests {
     }
 
     #[test]
+    fn parse_with_preference_and_timezone_in_utc() {
+        let current_time = Utc::now().time();
+        let current_hour = current_time.hour();
+        let current_minute = current_time.minute();
+        // let current_second = current_time.second();
+        let test_cases = vec![
+            (
+                "rfc3339",
+                "2017-11-25T22:34:50Z",
+                Utc.ymd(2017, 11, 25).and_hms(22, 34, 50),
+                Trunc::None,
+            ),
+            (
+                "rfc2822",
+                "Wed, 02 Jun 2021 06:31:39 GMT",
+                Utc.ymd(2021, 6, 2).and_hms(6, 31, 39),
+                Trunc::None,
+            ),
+            // we currently do not parse dmy format using hyphens,
+            // so the following tests are commented out
+            // (
+            //     "dmy_hms",
+            //     "30-04-2021 21:14:10",
+            //     Utc.ymd(2021, 4, 30).and_hms(21, 14, 10),
+            //     Trunc::None,
+            // ),
+            // (
+            //     "dmy_hms_z",
+            //     "25-11-2017 13:31:15 PST",
+            //     Utc.ymd(2017, 11, 25).and_hms(21, 31, 15),
+            //     Trunc::None,
+            // ),
+            // (
+            //     "dmy",
+            //     "21-02-2021",
+            //     // Utc.ymd(2021, 2, 21).and_time(Utc::now().time()).unwrap(),
+            //     Utc.with_ymd_and_hms(2021, 2, 21, current_hour, current_minute, current_second)
+            //         .unwrap(),
+            //     Trunc::Seconds,
+            // ),
+            // (
+            //     "dmy_z",
+            //     "21-02-2021 PST",
+            //     FixedOffset::west(8 * 3600)
+            //         .ymd(2021, 2, 21)
+            //         .and_time(
+            //             Utc::now()
+            //                 .with_timezone(&FixedOffset::west(8 * 3600))
+            //                 .time(),
+            //         )
+            //         .unwrap()
+            //         .with_timezone(&Utc),
+            //     Trunc::Seconds,
+            // ),
+            // (
+            //     "month_dmy",
+            //     "21-Feb-2021",
+            //     Utc.ymd(2021, 2, 21).and_time(Utc::now().time()).unwrap(),
+            //     Trunc::Seconds,
+            // ),
+            (
+                "month_mdy_hms",
+                "May 8, 2009 5:57:51 PM",
+                Utc.ymd(2009, 5, 8).and_hms(17, 57, 51),
+                Trunc::None,
+            ),
+            (
+                "month_mdy_hms_z",
+                "May 02, 2021 15:51 UTC",
+                Utc.ymd(2021, 5, 2).and_hms(15, 51, 0),
+                Trunc::None,
+            ),
+            (
+                "month_mdy",
+                "May 25, 2021",
+                Utc.ymd(2021, 5, 25).and_time(Utc::now().time()).unwrap(),
+                Trunc::Seconds,
+            ),
+            (
+                "month_dmy_hms",
+                "14 May 2019 19:11:40.164",
+                Utc.ymd(2019, 5, 14).and_hms_milli(19, 11, 40, 164),
+                Trunc::None,
+            ),
+            (
+                "month_dmy",
+                "1 July 2013",
+                Utc.ymd(2013, 7, 1).and_time(Utc::now().time()).unwrap(),
+                Trunc::Seconds,
+            ),
+            (
+                "slash_dmy_hms",
+                "19/03/2012 10:11:59",
+                Utc.ymd(2012, 3, 19).and_hms(10, 11, 59),
+                Trunc::None,
+            ),
+            (
+                "slash_dmy",
+                "21/08/71",
+                Utc.ymd(1971, 8, 21).and_time(Utc::now().time()).unwrap(),
+                Trunc::Seconds,
+            ),
+            (
+                "slash_dmy_hms",
+                "19/03/2012 10:11:59",
+                Utc.ymd(2012, 3, 19).and_hms(10, 11, 59),
+                Trunc::None,
+            ),
+            (
+                "slash_dmy",
+                "31/3/2014",
+                Utc.ymd(2014, 3, 31).and_time(Utc::now().time()).unwrap(),
+                Trunc::Seconds,
+            ),
+        ];
+
+        for &(test, input, want, trunc) in test_cases.iter() {
+            match trunc {
+                Trunc::None => {
+                    assert_eq!(
+                        super::parse_with_preference_and_timezone(input, true, &Utc).unwrap(),
+                        want,
+                        "parse_with_preference_and_timezone_in_utc/{}/{}",
+                        test,
+                        input
+                    )
+                }
+                Trunc::Seconds => assert_eq!(
+                    super::parse_with_preference_and_timezone(input, true, &Utc)
+                        .unwrap()
+                        .trunc_subsecs(0)
+                        .with_hour(current_hour)
+                        .unwrap()
+                        .with_minute(current_minute)
+                        .unwrap()
+                        .with_second(0)
+                        .unwrap(),
+                    want.trunc_subsecs(0).with_second(0).unwrap(),
+                    "parse_with_preference_and_timezone_in_utc/{}/{}",
+                    test,
+                    input
+                ),
+            };
+        }
+    }
+
+    #[test]
     fn parse_unambiguous_dmy() {
         assert_eq!(
             super::parse("31/3/22").unwrap().date(),
@@ -602,6 +764,12 @@ mod tests {
                 .unwrap()
                 .date(),
             Utc.ymd(2022, 3, 31)
+        );
+        assert_eq!(
+            super::parse_with_preference("31/07/2021", true)
+                .unwrap()
+                .date(),
+            Utc.ymd(2021, 7, 31)
         );
     }
 }
