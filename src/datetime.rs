@@ -154,7 +154,7 @@ where
         let ts_ns_val = ts_sec_val * 1_000_000_000_f64;
 
         let result = Utc.timestamp_nanos(ts_ns_val as i64).with_timezone(&Utc);
-        Some(result).map(Ok)
+        Some(Ok(result))
     }
 
     // rfc3339
