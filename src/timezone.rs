@@ -12,7 +12,7 @@ pub fn parse(s: &str) -> Result<FixedOffset> {
     } else {
         parse_offset_2822(s)?
     };
-    Ok(FixedOffset::east(offset))
+    FixedOffset::east_opt(offset).ok_or_else(|| anyhow!("input is out of range"))
 }
 
 #[inline]
@@ -130,6 +130,7 @@ fn colon_or_space(s: &str) -> Result<&str> {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
 
