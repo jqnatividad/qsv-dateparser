@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 //! A rust library for parsing date strings in commonly used formats. Parsed date will be returned
 //! as `chrono`'s `DateTime<Utc>`.
 //!
@@ -247,7 +246,7 @@ pub fn parse(input: &str) -> Result<DateTime<Utc>> {
 /// parses them using an MDY format.
 #[inline]
 pub fn parse_with_preference(input: &str, dmy_preference: bool) -> Result<DateTime<Utc>> {
-    let midnight = MIDNIGHT.get_or_init(|| NaiveTime::from_hms(0, 0, 0));
+    let midnight = MIDNIGHT.get_or_init(|| NaiveTime::from_hms_opt(0, 0, 0).unwrap());
     Parse::new_with_preference(&Utc, *midnight, dmy_preference).parse(input)
 }
 
@@ -273,6 +272,7 @@ pub fn parse_with<Tz2: TimeZone>(
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
 
