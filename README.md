@@ -8,8 +8,6 @@ It supports a subset of date formats supported by dateparser, skipping more obsc
 for performance.
 It also adds support for parsing dates in DMY format, with the `parse_with_preference` function.
 
-It will also be the foundation for replacing the chrono crate, with its [long-standing security advisory](https://rustsec.org/advisories/RUSTSEC-2020-0159).
-
 ## Accepted date formats
 ```rust
 // unix timestamp
