@@ -1,0 +1,31 @@
+[package]
+name         = "qsv-dateparser"
+version      = "0.11.0"
+authors      = ["Joel Natividad <joel@datHere.com>"]
+description  = "Parse dates in string formats that are commonly used. Optimized for qsv."
+readme       = "README.md"
+homepage     = "https://github.com/jqnatividad/qsv-dateparser"
+repository   = "https://github.com/jqnatividad/qsv-dateparser"
+keywords     = ["date", "time", "datetime", "parser", "parse"]
+license      = "MIT"
+edition      = "2021"
+rust-version = "1.71.0"
+
+[dependencies]
+anyhow = "1.0"
+chrono = { version = "0.4", default-features = false, features = [
+    "clock",
+    "std",
+] }
+regex = { version = "1", default-features = false, features = [
+    "std",
+    "perf",
+] }
+
+[dev-dependencies]
+chrono-tz = "0.8"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name    = "parse"
+harness = false
