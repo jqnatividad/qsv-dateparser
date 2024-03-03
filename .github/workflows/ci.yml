@@ -1,0 +1,75 @@
+name: ci
+on:
+  push: # run tests on every git push except pushing tags
+    tags-ignore:
+      - '**'
+  pull_request: # run tests on every pull request
+
+jobs:
+  check:
+    name: check - ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os_name: Linux
+            os: ubuntu-latest
+          - os_name: macOS
+            os: macos-latest
+          - os_name: Windows
+            os: windows-latest
+        toolchain:
+          - stable
+          - nightly
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: cargo check --all --all-targets --all-features
+
+  test:
+    name: test - ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os_name: Linux
+            os: ubuntu-latest
+          - os_name: macOS
+            os: macos-latest
+          - os_name: Windows
+            os: windows-latest
+        toolchain:
+          - stable
+          - nightly
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+      - run: cargo test --workspace --all-features
+
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - run: rustup component add clippy
+      - run: cargo clippy --workspace --tests --all-features -- -D warnings
